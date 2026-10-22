@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: repo-search-postgres
+    environment:
+      POSTGRES_DB: repo_search
+      POSTGRES_USER: repo_search_app
+      POSTGRES_PASSWORD: repo_search_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
