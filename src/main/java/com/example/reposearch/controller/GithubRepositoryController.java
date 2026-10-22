@@ -10,6 +10,11 @@ import com.example.reposearch.model.SortDirection;
 import com.example.reposearch.service.GithubRepositoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -29,7 +34,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/github")
-@Tag(name = "GitHub Repositories")
+@Tag(
+        name = "GitHub Repositories",
+        description = "Search GitHub repositories, store them in PostgreSQL, and retrieve stored repositories."
+)
 public class GithubRepositoryController {
 
     private final GithubRepositoryService githubRepositoryService;
@@ -45,8 +53,26 @@ public class GithubRepositoryController {
 
     @PostMapping("/search")
     @Operation(
-            summary = "Search GitHub repositories and store the results"
+            summary = "Search GitHub repositories and store the results",
+            description = """
+                Searches the GitHub repository API using the supplied criteria.
+                Results are mapped and stored in PostgreSQL using an efficient upsert,
+                so existing repositories are updated rather than duplicated.
+                """
     )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Repositories fetched and stored successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GithubSearchResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "429", description = "GitHub API rate limit exceeded"),
+            @ApiResponse(responseCode = "502", description = "GitHub API could not be reached")
+    })
     public ResponseEntity<GithubSearchResponse> searchRepositories(
             @Valid @RequestBody GithubSearchRequest request
     ) {
@@ -110,14 +136,59 @@ public class GithubRepositoryController {
 
     @GetMapping("/repositories")
     @Operation(
-            summary = "Retrieve stored repositories with filters, sorting, and pagination"
+            summary = "Retrieve stored repositories with filters, sorting, and pagination",
+            description = """
+                Retrieves repositories already stored in PostgreSQL.
+                Language and minimum-star filters are optional and may be used independently
+                or together. Results support pagination and ascending or descending sorting.
+                """
     )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Paginated repositories retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PagedRepositoryResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid filter, sort, page, or size value")
+    })
     public ResponseEntity<PagedRepositoryResponse> getStoredRepositories(
+            @Parameter(
+                    description = "Optional exact programming-language filter",
+                    example = "Java"
+            )
             @RequestParam(required = false) String language,
+
+            @Parameter(
+                    description = "Optional inclusive minimum GitHub star count",
+                    example = "100"
+            )
             @RequestParam(required = false) Long minStars,
+
+            @Parameter(
+                    description = "Field used to sort results: stars, forks, or updated",
+                    example = "stars"
+            )
             @RequestParam(defaultValue = "stars") String sort,
+
+            @Parameter(
+                    description = "Sort direction: asc or desc",
+                    example = "desc"
+            )
             @RequestParam(defaultValue = "desc") String direction,
+
+            @Parameter(
+                    description = "Zero-based page number",
+                    example = "0"
+            )
             @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(
+                    description = "Number of results per page; allowed range is 1 to 50",
+                    example = "20"
+            )
             @RequestParam(defaultValue = "20") int size
     ) {
         validatePageRequest(minStars, page, size);
