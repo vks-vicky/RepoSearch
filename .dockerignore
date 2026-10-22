@@ -1,36 +1,7 @@
-# Build outputs
-**/target/
-**/build/
-**/out/
-
-# IDEs and editors
-.idea/
-*.iml
-*.ipr
-*.iws
-.project
-.classpath
-.settings/
-.vscode/
-*.sublime-project
-*.sublime-workspace
-
-# Build tools and wrappers
-.gradle/
-build.gradle.kts
-gradlew
-gradlew.bat
-gradle/
-.mvn/
-mvnw
-mvnw.cmd
-
-# Version control
 .git
-.gitignore
-.gitattributes
-
-# Logs and OS files
-*.log
-.DS_Store
-Thumbs.db
+.idea
+.vscode
+target
+.env
+.env.*
+!.env.example
