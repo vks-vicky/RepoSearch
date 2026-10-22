@@ -5,16 +5,18 @@ import com.example.reposearch.client.dto.GithubSearchApiResponse;
 import com.example.reposearch.entity.GithubRepositoryEntity;
 import com.example.reposearch.mapper.GithubRepositoryMapper;
 import com.example.reposearch.model.GithubSearchCriteria;
-import com.example.reposearch.repository.GithubRepositoryUpsertRepository;
-import com.example.reposearch.service.GithubRepositoryService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.example.reposearch.model.SortDirection;
 import com.example.reposearch.model.StoredRepositorySearchCriteria;
 import com.example.reposearch.repository.GithubRepositoryJpaRepository;
 import com.example.reposearch.repository.GithubRepositorySpecifications;
+import com.example.reposearch.repository.GithubRepositoryUpsertRepository;
+import com.example.reposearch.service.GithubRepositoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -29,16 +31,12 @@ public class GithubRepositoryServiceImpl
     public GithubRepositoryServiceImpl(
             GithubApiClient githubApiClient,
             GithubRepositoryMapper repositoryMapper,
-            GithubRepositoryUpsertRepository upsertRepository
+            GithubRepositoryUpsertRepository upsertRepository,
+            GithubRepositoryJpaRepository jpaRepository
     ) {
         this.githubApiClient = githubApiClient;
         this.repositoryMapper = repositoryMapper;
         this.upsertRepository = upsertRepository;
-    }
-
-    public GithubRepositoryServiceImpl(
-            GithubRepositoryJpaRepository jpaRepository
-    ) {
         this.jpaRepository = jpaRepository;
     }
 
@@ -64,14 +62,17 @@ public class GithubRepositoryServiceImpl
             StoredRepositorySearchCriteria criteria
     ) {
         Sort.Direction direction =
-                criteria.direction() == com.example.reposearch.model.SortDirection.ASC
+                criteria.direction() == SortDirection.ASC
                         ? Sort.Direction.ASC
                         : Sort.Direction.DESC;
 
         PageRequest pageRequest = PageRequest.of(
                 criteria.page(),
                 criteria.size(),
-                Sort.by(direction, criteria.sortField().getDatabaseProperty())
+                Sort.by(
+                        direction,
+                        criteria.sortField().getDatabaseProperty()
+                )
         );
 
         return jpaRepository.findAll(
